@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"database/sql"
+	"time"
 
 	"github.com/caiomp87/crypto-votes-entities/models"
 )
@@ -12,7 +13,7 @@ type ICrypto interface {
 	FindAll() ([]*models.Crypto, error)
 	FindByID(id int) (*models.Crypto, error)
 	Create(crypto *models.Crypto) error
-	UpdateByID(id int, crypto *models.Crypto) (*models.Crypto, error)
+	UpdateByID(id int, crypto *models.Crypto) error
 	DeleteByID(id int) error
 }
 
@@ -37,7 +38,7 @@ func (cs *cryptoService) FindAll() ([]*models.Crypto, error) {
 	cryptos := make([]*models.Crypto, 0)
 	for rows.Next() {
 		crypto := models.Crypto{}
-		if err := rows.Scan(&crypto.ID, &crypto.Name, &crypto.Network, &crypto.UpVotes, &crypto.DownVotes); err != nil {
+		if err := rows.Scan(&crypto.ID, &crypto.Name, &crypto.Network, &crypto.UpVotes, &crypto.DownVotes, &crypto.CreatedAt, &crypto.UpdatedAt); err != nil {
 			return nil, err
 		}
 		cryptos = append(cryptos, &crypto)
@@ -50,7 +51,7 @@ func (cs *cryptoService) FindByID(id int) (*models.Crypto, error) {
 	row := cs.db.QueryRow(`SELECT * FROM cryptos WHERE id=$1`, id)
 
 	crypto := models.Crypto{}
-	if err := row.Scan(&crypto.ID, &crypto.Name, &crypto.Network, &crypto.UpVotes, &crypto.DownVotes); err != nil {
+	if err := row.Scan(&crypto.ID, &crypto.Name, &crypto.Network, &crypto.UpVotes, &crypto.DownVotes, &crypto.CreatedAt, &crypto.UpdatedAt); err != nil {
 		return nil, err
 	}
 
@@ -68,10 +69,24 @@ func (cs *cryptoService) Create(crypto *models.Crypto) error {
 	return nil
 }
 
-func (cs *cryptoService) UpdateByID(id int, crypto *models.Crypto) (*models.Crypto, error) {
-	return nil, nil
+func (cs *cryptoService) UpdateByID(id int, crypto *models.Crypto) error {
+	updateStatement := `UPDATE cryptos SET name=$2, network=$3, updatedat=$4 WHERE id=$1`
+
+	_, err := cs.db.Exec(updateStatement, id, crypto.Name, crypto.Network, time.Now().UTC())
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (cs *cryptoService) DeleteByID(id int) error {
+	deleteStatement := `DELETE FROM cryptos WHERE id=$1`
+
+	_, err := cs.db.Exec(deleteStatement, id)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
